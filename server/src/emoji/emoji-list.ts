@@ -1,4 +1,4 @@
-export const _generateRandomEmojies = (len: number = 8) => {
+export const generateRandomEmojies = (len: number = 8) => {
   const randomEmojis = [];
   while (randomEmojis.length < len) {
     // On récupére l'index d'un emoji aléatoire dans notre array allEmojis
@@ -27,7 +27,6 @@ export const allEmojis = [
   '👿',
   '😉',
   '😊',
-  '☺️',
   '😋',
   '😌',
   '😍',
