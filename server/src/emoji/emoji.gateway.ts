@@ -39,10 +39,10 @@ export class EmojiGateway implements OnGatewayConnection, OnGatewayDisconnect {
     ],
   };
 
-  clients: Map<Socket, { [key: string]: any }> = new Map();
+  clients: Map<Socket, { emoji: string; stepOrder: number }[]> = new Map();
 
   handleConnection(client: _Socket) {
-    this.clients.set(client, {});
+    this.clients.set(client, []);
 
     client.emit('story-update', this.story);
   }
@@ -55,6 +55,9 @@ export class EmojiGateway implements OnGatewayConnection, OnGatewayDisconnect {
   onStepVote(client: _Socket, data: { emoji: string; stepOrder: number }) {
     try {
       const { emoji, stepOrder } = data;
+      const clientVotes = this.clients.get(client);
+      const vote = clientVotes.find((vote) => vote.stepOrder === stepOrder);
+
       const step = this.story.steps.find((step) => step.order === stepOrder);
 
       if (!step) throw new Error('Step not found : ' + stepOrder);
@@ -64,6 +67,30 @@ export class EmojiGateway implements OnGatewayConnection, OnGatewayDisconnect {
       );
 
       if (!contender) throw new Error('Contender not found : ' + emoji);
+
+      if (!vote) {
+        clientVotes.push({ emoji, stepOrder });
+
+        contender.vote++;
+        this.server.emit('story-update', this.story);
+        return;
+      }
+      console.log({ vote, emoji });
+
+      if (vote.emoji === emoji) {
+        contender.vote--;
+        vote.emoji = '';
+        this.server.emit('story-update', this.story);
+        return;
+      } else {
+        const previousVote = step.emojiContenders.find(
+          (contender) => contender.emoji === vote.emoji,
+        );
+
+        if (previousVote) previousVote.vote--;
+
+        vote.emoji = emoji;
+      }
 
       contender.vote++;
 
