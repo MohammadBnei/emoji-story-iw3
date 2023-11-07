@@ -1,9 +1,9 @@
 import { Module } from '@nestjs/common';
-import { EmojiGateway } from './emoji/emoji.gateway';
 import { EmojiModule } from './emoji/emoji.module';
+import { ScheduleModule } from '@nestjs/schedule';
 
 @Module({
-  imports: [EmojiModule],
+  imports: [ScheduleModule.forRoot(), EmojiModule],
   controllers: [],
   providers: [],
 })

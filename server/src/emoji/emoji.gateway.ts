@@ -12,6 +12,7 @@ import {
   Story,
 } from 'interface/event';
 import { generateRandomEmojies } from './emoji-list';
+import { SchedulerRegistry } from '@nestjs/schedule';
 
 type _Socket = Socket<ClientToServerEvent, ServerToClientEvent>;
 
@@ -40,6 +41,8 @@ export class EmojiGateway implements OnGatewayConnection, OnGatewayDisconnect {
   };
 
   clients: Map<Socket, Map<number, string>> = new Map();
+
+  constructor(private schedulerRegistry: SchedulerRegistry) {}
 
   handleConnection(client: _Socket) {
     this.clients.set(client, new Map());
@@ -86,7 +89,6 @@ export class EmojiGateway implements OnGatewayConnection, OnGatewayDisconnect {
       if (vote === emoji) {
         contender.vote--;
         clientVotes.delete(stepOrder);
-        this.server.emit('story-update', this.story);
       }
 
       this.server.emit('story-update', this.story);
@@ -94,5 +96,28 @@ export class EmojiGateway implements OnGatewayConnection, OnGatewayDisconnect {
       console.log(error);
       client.emit('user-error', error);
     }
+  }
+
+  @SubscribeMessage('start')
+  startTimer(
+    client: _Socket,
+    { stepOrder, timeLeft }: { stepOrder: number; timeLeft: number },
+  ) {
+    const startDate = new Date();
+    const stepTimer = setInterval(() => {
+      console.log({ stepOrder, timeLeft });
+      let timeleft =
+        timeLeft - (new Date().getTime() - startDate.getTime()) / 1000;
+      timeleft = Math.round(timeleft);
+      if (timeleft < 0) {
+        this.schedulerRegistry.deleteInterval(`step-${stepOrder}`);
+        return;
+      }
+      this.server.emit('step-timer', {
+        stepOrder,
+        timeLeft: timeleft,
+      });
+    }, 1000);
+    this.schedulerRegistry.addInterval(`step-${stepOrder}`, stepTimer);
   }
 }
