@@ -75,7 +75,6 @@ export class EmojiGateway implements OnGatewayConnection, OnGatewayDisconnect {
         this.server.emit('story-update', this.story);
         return;
       }
-      console.log({ vote, emoji });
 
       if (vote.emoji === emoji) {
         contender.vote--;
