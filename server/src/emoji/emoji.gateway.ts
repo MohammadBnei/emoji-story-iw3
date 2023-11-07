@@ -39,10 +39,10 @@ export class EmojiGateway implements OnGatewayConnection, OnGatewayDisconnect {
     ],
   };
 
-  clients: Map<Socket, { emoji: string; stepOrder: number }[]> = new Map();
+  clients: Map<Socket, Map<number, string>> = new Map();
 
   handleConnection(client: _Socket) {
-    this.clients.set(client, []);
+    this.clients.set(client, new Map());
 
     client.emit('story-update', this.story);
   }
@@ -56,7 +56,7 @@ export class EmojiGateway implements OnGatewayConnection, OnGatewayDisconnect {
     try {
       const { emoji, stepOrder } = data;
       const clientVotes = this.clients.get(client);
-      const vote = clientVotes.find((vote) => vote.stepOrder === stepOrder);
+      const vote = clientVotes.get(stepOrder);
 
       const step = this.story.steps.find((step) => step.order === stepOrder);
 
@@ -69,32 +69,29 @@ export class EmojiGateway implements OnGatewayConnection, OnGatewayDisconnect {
       if (!contender) throw new Error('Contender not found : ' + emoji);
 
       if (!vote) {
-        clientVotes.push({ emoji, stepOrder });
-
+        clientVotes.set(stepOrder, emoji);
         contender.vote++;
-        this.server.emit('story-update', this.story);
-        return;
       }
 
-      if (vote.emoji === emoji) {
-        contender.vote--;
-        vote.emoji = '';
-        this.server.emit('story-update', this.story);
-        return;
-      } else {
+      if (vote && vote !== emoji) {
         const previousVote = step.emojiContenders.find(
-          (contender) => contender.emoji === vote.emoji,
+          (contender) => contender.emoji === vote,
         );
+        previousVote && previousVote.vote--;
 
-        if (previousVote) previousVote.vote--;
-
-        vote.emoji = emoji;
+        clientVotes.set(stepOrder, emoji);
+        contender.vote++;
       }
 
-      contender.vote++;
+      if (vote === emoji) {
+        contender.vote--;
+        clientVotes.delete(stepOrder);
+        this.server.emit('story-update', this.story);
+      }
 
       this.server.emit('story-update', this.story);
     } catch (error) {
+      console.log(error);
       client.emit('user-error', error);
     }
   }
