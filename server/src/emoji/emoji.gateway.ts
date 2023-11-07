@@ -50,4 +50,26 @@ export class EmojiGateway implements OnGatewayConnection, OnGatewayDisconnect {
   handleDisconnect(client: Socket) {
     this.clients.delete(client);
   }
+
+  @SubscribeMessage('step-vote')
+  onStepVote(client: _Socket, data: { emoji: string; stepOrder: number }) {
+    try {
+      const { emoji, stepOrder } = data;
+      const step = this.story.steps.find((step) => step.order === stepOrder);
+
+      if (!step) throw new Error('Step not found : ' + stepOrder);
+
+      const contender = step.emojiContenders.find(
+        (contender) => contender.emoji === emoji,
+      );
+
+      if (!contender) throw new Error('Contender not found : ' + emoji);
+
+      contender.vote++;
+
+      this.server.emit('story-update', this.story);
+    } catch (error) {
+      client.emit('user-error', error);
+    }
+  }
 }
