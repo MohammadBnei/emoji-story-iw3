@@ -28,6 +28,7 @@ export default function Home() {
       <h1 className="text-6xl font-bold">Emoji Story</h1>
       {story?.steps?.[0] && (
         <Step
+          key={story?.steps[0].order}
           step={story?.steps[0]}
           onVote={(data) => {
             socket.emit("step-vote", data);
