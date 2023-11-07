@@ -6,6 +6,9 @@ import {
   WebSocketServer,
 } from '@nestjs/websockets';
 import { Socket } from 'socket.io';
+import { ClientToServerEvent, ServerToClientEvent } from 'interface/event';
+
+type _Socket = Socket<ClientToServerEvent, ServerToClientEvent>;
 
 @WebSocketGateway({
   cors: {
@@ -15,14 +18,14 @@ import { Socket } from 'socket.io';
 })
 export class EmojiGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
-  server: Socket;
+  server: _Socket;
 
   clients: Map<Socket, { [key: string]: any }> = new Map();
 
-  handleConnection(client: Socket) {
+  handleConnection(client: _Socket) {
     this.clients.set(client, {});
 
-    client.emit('story-update', {});
+    client.emit('story-update');
   }
 
   handleDisconnect(client: Socket) {
