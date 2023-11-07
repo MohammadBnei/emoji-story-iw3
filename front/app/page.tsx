@@ -1,16 +1,21 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Socket, io } from "socket.io-client";
-import { ClientToServerEvent, ServerToClientEvent } from "interface/event";
+import {
+  ClientToServerEvent,
+  ServerToClientEvent,
+  Story,
+} from "interface/event";
 
 const socket: Socket<ServerToClientEvent, ClientToServerEvent> = io(
   process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:4000"
 );
 export default function Home() {
+  const [story, setStory] = useState<Story>();
   useEffect(() => {
     socket.on("story-update", (data) => {
-      console.log({ data });
+      setStory(data);
     });
 
     return () => {
